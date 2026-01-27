@@ -3,29 +3,26 @@
 
 #include "zmienne.h"
 
-void dodaj(mistyczne_stworzenie **tab, int *n);
+void dodaj_stworzenie(mistyczne_stworzenie** head, mistyczne_stworzenie nowe_stworzenie);
 
-void wyszukaj(mistyczne_stworzenie *tab, int n);
+void wpisz_stworzenie(mistyczne_stworzenie* nowe_stworzenie);
 
-void modyfikuj(mistyczne_stworzenie *tab, int n);
+void wyswietl_stworzenia(const mistyczne_stworzenie* head);
 
-void usun_pojedyncze(mistyczne_stworzenie *tab, int *n);
+void wyszukaj_stworzenie(const mistyczne_stworzenie* head, const char* nazwa);
 
-void usun_masowe(mistyczne_stworzenie *tab, int *n);
+void modyfikuj_stworzenie(mistyczne_stworzenie* head, const char* nazwa);
 
-void sortuj_tekst(mistyczne_stworzenie *tab, int n);
+void usun_stworzenie(mistyczne_stworzenie** head, const char* nazwa);
 
-void sortuj_liczby(mistyczne_stworzenie *tab, int n);
+void zwolnij_pamiec(mistyczne_stworzenie** head);
 
-void zapisz(const char *plik, mistyczne_stworzenie *tab, int n);
+void sortuj_tekstowo(mistyczne_stworzenie** head);
 
-void wczytaj(const char *plik, mistyczne_stworzenie **tab, int *n);
+void sortuj_liczbowo(mistyczne_stworzenie** head);
 
-static void clear_buffer();
+void zapisz_do_pliku(const mistyczne_stworzenie* head, const char* nazwa_pliku);
 
-void wyswietl(mistyczne_stworzenie *tab, int n);
+void wczytaj_z_pliku(mistyczne_stworzenie** head, const char* nazwa_pliku);
 
-int czy_tekst(const char *tekst);
-
-int pobierz_liczbe(const char *komunikat);
 #endif

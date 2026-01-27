@@ -1,75 +1,104 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "zmienne.h"
-#include "funkcje.h"
 
-int main(int argc, char *argv[]) {
+#include "funkcje.h"
+#include "funkcje_p.h"
+#include "zmienne.h"
+
+int main(int argc, char* argv[]){
     if (argc < 2) {
-        printf("Blad: Nie podano nazwy pliku bazy!\n");
         printf("Uzycie: %s <nazwa_pliku>\n", argv[0]);
         return 1;
     }
-
-    char *sciezka_pliku = argv[1];
-    int opcja;
-    int liczba_stworzen = 0;
-    mistyczne_stworzenie *tab = NULL;
-
-    do {
-        printf("\n--- REZERWAT MAGOW: %s ---\n", sciezka_pliku);
-        printf("1. Zarejestruj nowe stworzenie\n");
-        printf("2. Wyszukaj (tekst + liczba)\n");
-        printf("3. Zmodyfikuj dane\n");
-        printf("4. Sortuj (tekstowo/liczbowo)\n");
-        printf("5. Usun (pojedynczo/masowo)\n");
-        printf("6. Zapisz dane do pliku\n");
-        printf("7. Odczytaj dane z pliku\n");
-        printf("8. Wyswietl wszystko\n");
+    const char* nazwa_pliku = argv[1];
+    mistyczne_stworzenie* head = NULL;
+    int wybor;
+    
+    printf("\n--- EWIDENCJA MISTYCZNYCH STWORZEN ---\n");
+    do
+    {
+        printf("\nCo chcesz zrobic:\n");
+        printf("1. Dodaj stworzenie\n");
+        printf("2. Wyswietl wszystkie stworzenia\n");
+        printf("3. Wyszukaj stworzenie\n");
+        printf("4. Modyfikuj stworzenie\n");
+        printf("5. Usun stworzenie\n");
+        printf("6. Sortuj stworzenia\n");
+        printf("7. Zapisz do pliku\n");
+        printf("8. Wczytaj z pliku\n");
         printf("0. Wyjdz\n");
-        printf("Wybor: ");
-        
-        if (scanf("%d", &opcja) != 1) {
-            int c; while ((c = getchar()) != '\n' && c != EOF);
-            continue;
+        wybor = pobierz_liczbe("Wpisz numer opcji: ");
+        clear_buffer();
+        switch (wybor)
+        {
+        case 1:
+            dodaj_stworzenie(&head, (mistyczne_stworzenie){0});
+            break;
+        case 2:
+            wyswietl_stworzenia(head);
+            break;
+        case 3:
+            {
+                char nazwa[MAX_ZN];
+                printf("Podaj nazwe stworzenia do wyszukania: ");
+                fgets(nazwa, MAX_ZN, stdin);
+                nazwa[strcspn(nazwa, "\n")] = 0;
+                wyszukaj_stworzenie(head, nazwa);
+            }
+            break;
+        case 4:
+            {
+                char nazwa[MAX_ZN];
+                printf("Podaj nazwe stworzenia do modyfikacji: ");
+                fgets(nazwa, MAX_ZN, stdin);
+                nazwa[strcspn(nazwa, "\n")] = 0;
+                modyfikuj_stworzenie(head, nazwa);
+            }
+            break;
+        case 5:
+            {
+                char nazwa[MAX_ZN];
+                printf("Podaj nazwe stworzenia do usuniecia: ");
+                fgets(nazwa, MAX_ZN, stdin);
+                nazwa[strcspn(nazwa, "\n")] = 0;
+                usun_stworzenie(&head, nazwa);
+            }
+            break;
+        case 6:
+            {
+                int wybor_sortowania;
+                printf("Wybierz typ sortowania:\n");
+                printf("1. Tekstowy\n");
+                printf("2. Liczbowy\n");
+                wybor_sortowania = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+                clear_buffer();
+                
+                if (wybor_sortowania == 1) {
+                    sortuj_tekstowo(&head);
+                    break;
+                } else if (wybor_sortowania == 2) {
+                    sortuj_licbowo(&head);
+                    break;
+                } else {
+                    printf("Niepoprawna opcja.\n");
+                    break;
+                }
+            }
+        case 7:
+            zapisz_do_pliku(head, nazwa_pliku);
+            break;
+        case 8:
+            wczytaj_z_pliku(&head, nazwa_pliku);
+            break;
+        case 0:
+            zapisz_do_pliku(head, nazwa_pliku);
+            zwolnij_pamiec(&head);
+            printf("Koniec programu.\n");
+            break;
+        default:
+            printf("Niepoprawna opcja. Sprobuj ponownie.\n");
+            break;
         }
-
-        switch (opcja) {
-            case 1: 
-                dodaj(&tab, &liczba_stworzen); 
-                break;
-            case 2: 
-                wyszukaj(tab, liczba_stworzen); 
-                break;
-            case 3: 
-                modyfikuj(tab, liczba_stworzen); 
-                break;
-            case 4:
-                printf("\n1. Alfabetycznie\n2. Liczbowo\nWybor: ");
-                int s_opc; scanf("%d", &s_opc);
-                if (s_opc == 1) sortuj_tekst(tab, liczba_stworzen);
-                else if (s_opc == 2) sortuj_liczby(tab, liczba_stworzen);
-                break;
-            case 5:
-                printf("\n1. Pojedyncze\n2. Masowe\nWybor: ");
-                int u_opc; scanf("%d", &u_opc);
-                if (u_opc == 1) usun_pojedyncze(tab, &liczba_stworzen);
-                else if (u_opc == 2) usun_masowe(tab, &liczba_stworzen);
-                break;
-            case 6:
-                zapisz(sciezka_pliku, tab, liczba_stworzen);
-                break;
-            case 7:
-                wczytaj(sciezka_pliku, &tab, &liczba_stworzen);
-                break;
-            case 8:
-                wyswietl(tab, liczba_stworzen);
-                break;
-            case 0:
-                printf("Zamykanie systemu...\n");
-                break;
-        }
-    } while (opcja != 0);
-
-    free(tab);
-    return 0;
+    } while (wybor != 0);
+    
 }

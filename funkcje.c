@@ -2,432 +2,408 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "funkcje_p.h"
 #include "funkcje.h"
 
-static void clear_buffer() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
+void wpisz_stworzenie(mistyczne_stworzenie* nowe_stworzenie) {
+    char buffer[MAX_ZN];
+
+    wczyt_nazwe(nowe_stworzenie->nazwa, "Podaj nazwe stworzenia: ");
+
+    wczyt_gatunek(nowe_stworzenie->gatunek, "Podaj gatunek stworzenia: ");
+
+    wczyt_poziom_m(&nowe_stworzenie->poziom_mocy, "Podaj poziom mocy (1-999): ");
+
+    wczyt_poziom_n(&nowe_stworzenie->poziom_niebezpieczenstwa, "Podaj poziom niebezpieczenstwa (1-10): ");
+
+    wczyt_date(&nowe_stworzenie->data_karmienia);
+
+    wczyt_status(&nowe_stworzenie->status_stworzenia);
+
+    nowe_stworzenie->next = NULL;
 }
 
-int czy_tekst(const char *tekst) {
-    if (strlen(tekst) == 0) return 0;
-    for (size_t i = 0; i < strlen(tekst); i++) {
-        if (!isalpha((unsigned char)tekst[i]) && tekst[i] != ' ') {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-int pobierz_liczbe(const char *komunikat) {
-    int liczba;
-    while (1) {
-        printf("%s", komunikat);
-        if (scanf("%d", &liczba) == 1) {
-            return liczba;
-        }
-        printf("Blad: To nie jest poprawna liczba!\n");
-        clear_buffer();
-    }
-}
-
-void dodaj(mistyczne_stworzenie **tab, int *n) {
-    mistyczne_stworzenie *temp = realloc(*tab, (*n + 1) * sizeof(mistyczne_stworzenie));
-    if (temp == NULL) {
-        printf("Blad krytyczny: Brak pamieci!\n");
+void dodaj_stworzenie(mistyczne_stworzenie** head, mistyczne_stworzenie nowe_stworzenie) {
+    mistyczne_stworzenie* nowy = (mistyczne_stworzenie*)malloc(sizeof(mistyczne_stworzenie));
+    if (nowy == NULL) {
+        printf("Blad alokacji pamieci!\n");
         return;
     }
-    *tab = temp;
-    mistyczne_stworzenie *m = &(*tab)[*n];
+    wpisz_stworzenie(nowy);
 
-    clear_buffer();
-    do {
-        printf("Nazwa: ");
-        if (fgets(m->nazwa, MAX_ZN, stdin)) {
-            m->nazwa[strcspn(m->nazwa, "\n")] = 0;
-            if (czy_tekst(m->nazwa)) break;
+    if (*head == NULL) {
+        *head = nowy;
+    } else {
+        mistyczne_stworzenie* temp = *head;
+        while (temp->next != NULL) {
+            temp = temp->next;
         }
-        printf("Blad: Nazwa moze zawierac tylko litery!\n");
-    } while (1);
-
-    do {
-        printf("Gatunek: ");
-        if (fgets(m->gatunek, MAX_ZN, stdin)) {
-            m->gatunek[strcspn(m->gatunek, "\n")] = 0;
-            if (czy_tekst(m->gatunek)) break;
-        }
-        printf("Blad: Gatunek moze zawierac tylko litery!\n");
-    } while (1);
-
-    do {
-        m->poziom_mocy = pobierz_liczbe("Poziom mocy (1-999): ");
-        if (m->poziom_mocy >= 1 && m->poziom_mocy <= 999)
-            break;
-        printf("Blad: Poziom mocy musi byc w zakresie 1–999!\n");
-    } while (1);
-
-    do {
-        m->poziom_niebezpieczenstwa = pobierz_liczbe("Poziom niebezpieczenstwa (1-10): ");
-        if (m->poziom_niebezpieczenstwa >= 1 && m->poziom_niebezpieczenstwa <= 10)
-            break;
-        printf("Blad: Poziom niebezpieczenstwa musi byc w zakresie 1–10!\n");
-    } while (1);
-
-    printf("Data karmienia (dd mm rrrr):\n");
-    m->data_karmienia.dzien = pobierz_liczbe("Dzien: ");
-    m->data_karmienia.miesiac = pobierz_liczbe("Miesiac: ");
-    m->data_karmienia.rok = pobierz_liczbe("Rok: ");
-
-    do {
-        m->status_stworzenia = (stan)pobierz_liczbe("Status (0-4): ");
-        if (m->status_stworzenia >= STABILNY && m->status_stworzenia <= W_KWARANTANNIE)
-            break;
-        printf("Blad: Status musi byc w zakresie 0–4!\n");
-    } while (1);
-
-    (*n)++;
-    printf("Pomyslnie dodano stworzenie: %s\n", m->nazwa);
+        temp->next = nowy;
+    }
+    printf("Stworzenie dodane pomyslnie.\n");
 }
 
+void wyswietl_stworzenia(const mistyczne_stworzenie* head) {
+    if (head == NULL) {
+        printf("Brak stworzen do wyswietlenia.\n");
+        return;
+    }
+    const mistyczne_stworzenie* temp = head;
+    while (temp != NULL) {
+        printf("Nazwa: %s\n", temp->nazwa);
+        printf("Gatunek: %s\n", temp->gatunek);
+        printf("Poziom mocy: %d\n", temp->poziom_mocy);
+        printf("Poziom niebezpieczenstwa: %d\n", temp->poziom_niebezpieczenstwa);
+        printf("Data karmienia: %02d-%02d-%04d\n", temp->data_karmienia.dzien, temp->data_karmienia.miesiac, temp->data_karmienia.rok);
+        printf("Status stworzenia: %d\n", temp->status_stworzenia);
+        printf("--------------------------\n");
+        temp = temp->next;
+    }
+}
 
-void wyszukaj(mistyczne_stworzenie *tab, int n) {
-    char pref[MAX_ZN];
-    int poziom, opcja1, opcja2;
+void wyszukaj_stworzenie(const mistyczne_stworzenie* head, const char* nazwa) {
+    if (head == NULL) {
+        printf("Brak stworzen w bazie.\n");
+        return;
+    }
+    const mistyczne_stworzenie* temp = head;
+    
+    printf("Po czym mam szukac stworzenia(tekstowo)? (1-Nazwa, 2-Gatunek): ");
+    int wybor;
+    do {
+        wybor = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+        if (wybor < 1 || wybor > 2) {
+            printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-2.\n");
+        }
+    } while (wybor < 1 || wybor > 2);
+    clear_buffer();
+
+    printf("Po czym mam szukac stworzenia(liczbowo)? (1-Poziom mocy, 2-Poziom niebezpieczenstwa): ");
+    int wybor_liczbowy;
+    do {
+        wybor_liczbowy = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+        if (wybor_liczbowy < 1 || wybor_liczbowy > 2) {
+            printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-2.\n");
+        }
+    } while (wybor_liczbowy < 1 || wybor_liczbowy > 2);
+    clear_buffer();
+
     int znaleziono = 0;
+    while (temp != NULL) {
+        int tekst_match = 0;
+        int liczbowy_match = 0;
 
-    if (n == 0) {
-        printf("Rejestr jest pusty. Nie ma czego szukac.\n");
-        return;
+        if (wybor == 1 && strcmp(temp->nazwa, nazwa) == 0) {
+            tekst_match = 1;
+        } else if (wybor == 2 && strcmp(temp->gatunek, nazwa) == 0) {
+            tekst_match = 1;
+        }
+
+        if (wybor_liczbowy == 1 && temp->poziom_mocy == atoi(nazwa)) {
+            liczbowy_match = 1;
+        } else if (wybor_liczbowy == 2 && temp->poziom_niebezpieczenstwa == atoi(nazwa)) {
+            liczbowy_match = 1;
+        }
+
+        if (tekst_match || liczbowy_match) {
+            printf("Znaleziono stworzenie:\n");
+            printf("Nazwa: %s\n", temp->nazwa);
+            printf("Gatunek: %s\n", temp->gatunek);
+            printf("Poziom mocy: %d\n", temp->poziom_mocy);
+            printf("Poziom niebezpieczenstwa: %d\n", temp->poziom_niebezpieczenstwa);
+            printf("Data karmienia: %02d-%02d-%04d\n", temp->data_karmienia.dzien, temp->data_karmienia.miesiac, temp->data_karmienia.rok);
+            printf("Status stworzenia: %d\n", temp->status_stworzenia);
+            printf("--------------------------\n");
+            znaleziono++;
+        }
+        temp = temp->next;
     }
-
-    do {
-        printf("Po czym chcesz wyszukiwac (tekstowo)?\n");
-        printf("1. Nazwa\n2. Gatunek\n");
-        opcja1 = pobierz_liczbe("Wybor: ");
-        if (opcja1 < 1 || opcja1 > 2) printf("Blad: Wybierz 1 lub 2.\n");
-    } while (opcja1 < 1 || opcja1 > 2);
-
-    clear_buffer();
-    do {
-        printf("Podaj prefiks (poczatkowe litery): ");
-        if (fgets(pref, MAX_ZN, stdin)) {
-            pref[strcspn(pref, "\n")] = 0;
-            if (strlen(pref) > 0) break;
-        }
-        printf("Blad: Prefiks nie moze byc pusty.\n");
-    } while (1);
-
-    do {
-        printf("Po jakim parametrze chcesz wyszukiwac (liczbowo)?\n");
-        printf("1. Poziom mocy\n2. Poziom niebezpieczenstwa\n");
-        opcja2 = pobierz_liczbe("Wybor: ");
-        if (opcja2 < 1 || opcja2 > 2) printf("Blad: Wybierz 1 lub 2.\n");
-    } while (opcja2 < 1 || opcja2 > 2);
-
-    poziom = pobierz_liczbe("Podaj wartosc do porownania: ");
-
-    printf("\n--- WYNIKI WYSZUKIWANIA ---\n");
-    for (int i = 0; i < n; i++) {
-        int tekst_pasuje = 0;
-        int liczba_pasuje = 0;
-
-        if (opcja1 == 1) {
-            if (strncmp(tab[i].nazwa, pref, strlen(pref)) == 0) tekst_pasuje = 1;
-        } else {
-            if (strncmp(tab[i].gatunek, pref, strlen(pref)) == 0) tekst_pasuje = 1;
-        }
-        if (opcja2 == 1) {
-            if (tab[i].poziom_mocy == poziom) liczba_pasuje = 1;
-        } else {
-            if (tab[i].poziom_niebezpieczenstwa == poziom) liczba_pasuje = 1;
-        }
-
-        if (tekst_pasuje && liczba_pasuje) {
-            printf("Nazwa: %s | Gatunek: %s | Moc: %d | Niebezpieczenstwo: %d | Status: %d\n",
-                   tab[i].nazwa, tab[i].gatunek, tab[i].poziom_mocy, 
-                   tab[i].poziom_niebezpieczenstwa, tab[i].status_stworzenia);
-            znaleziono = 1;
-        }
+    if (znaleziono == 0) {
+        printf("Nie znaleziono stworzenia o podanych kryteriach.\n");
     }
-
-    if (!znaleziono) {
-        printf("Brak wynikow spelniajacych oba kryteria.\n");
-    }
+    printf("Liczba znalezionych stworzen: %d\n", znaleziono);
 }
 
-void modyfikuj(mistyczne_stworzenie *tab, int n) {
-    char nazwa_szukana[MAX_ZN];
-    int opcja, status_val;
-    int indeks = -1;
-
-    clear_buffer();
-    printf("Podaj nazwe stworzenia do modyfikacji: ");
-    fgets(nazwa_szukana, MAX_ZN, stdin);
-    nazwa_szukana[strcspn(nazwa_szukana, "\n")] = 0;
-
-    for (int j = 0; j < n; j++) {
-        if (strcmp(tab[j].nazwa, nazwa_szukana) == 0) {
-            indeks = j;
-            break;
-        }
-    }
-
-    if (indeks == -1) {
-        printf("Nie znaleziono stworzenia o nazwie: %s\n", nazwa_szukana);
+void modyfikuj_stworzenie(mistyczne_stworzenie* head, const char* nazwa){
+    if (head == NULL) {
+        printf("Brak stworzen w bazie.\n");
         return;
     }
+    mistyczne_stworzenie* temp = head;
 
+    char buffer[MAX_ZN];
+
+    printf("Podaj nazwe stworzenia ktore chcesz modyfikowac: ");
     do {
-        printf("\nModyfikujesz: %s\n", tab[indeks].nazwa);
-        printf("1. Gatunek\n2. Poziom mocy\n3. Poziom niebezpieczenstwa\n");
-        printf("4. Data karmienia\n5. Status stworzenia\n0. Zakoncz\n");
-        
-        opcja = pobierz_liczbe("Wybor: ");
+        fgets(buffer, MAX_ZN, stdin);
+        buffer[strcspn(buffer, "\n")] = 0;
+        if (!czy_tekst(buffer)) {
+            printf("Niepoprawna nazwa. Prosze uzyc tylko liter i spacji.\n");
+        } 
+    } while (!czy_tekst(buffer));
+    clear_buffer();
+    if (strcmp(temp->nazwa, buffer) != 0) {
+        printf("Nie znaleziono stworzenia o podanej nazwie.\n");
+        return;
+    }
+    printf("Modyfikowanie stworzenia: %s\n", temp->nazwa);
+    printf("Wybierz pole do modyfikacji (nazwa nie może być modyfikowana):\n");
+    printf("1. Gatunek\n");
+    printf("2. Poziom mocy\n");
+    printf("3. Poziom niebezpieczenstwa\n");
+    printf("4. Data karmienia\n");
+    printf("5. Status stworzenia\n");
+    printf("0. Zakoncz modyfikacje\n");
+    int wybor;
+    do {
+        do {
+            wybor = pobierz_liczbe("Wpisz numer opcji (1-5): ");
+            if (wybor < 0 || wybor > 5) {
+                printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-5.\n");
+            }
+        } while (wybor < 0 || wybor > 5);
+        clear_buffer();
+        switch (wybor)
+        {
+        case 1:
+            wczyt_gatunek(temp->gatunek, "Podaj nowy gatunek stworzenia: ");
+            break;
+        case 2:
+            wczyt_poziom_m(&temp->poziom_mocy, "Podaj nowy poziom mocy (1-999): ");
+            break;
+        case 3:
+            wczyt_poziom_n(&temp->poziom_niebezpieczenstwa, "Podaj nowy poziom niebezpieczenstwa (1-10): ");
+            break;
+        case 4:
+            wczyt_date(&temp->data_karmienia);
+            break;
+        case 5:
+            wczyt_status(&temp->status_stworzenia);
+            break;
+        case 0:
+            printf("Modyfikacja zakonczona.\n");
+            return;
+        default:
+            printf("Niepoprawna opcja.\n");
+            return;
+        }
+    } while (wybor != 0);
+    printf("Stworzenie zmodyfikowane pomyslnie.\n");
+}
 
-        switch (opcja) {
+void usun_stworzenie(mistyczne_stworzenie** head, const char* nazwa) {
+    if (*head == NULL) {
+        printf("Brak stworzen w bazie.\n");
+        return;
+    }
+    printf("Podaj po czym mam usunac stworzenie?");
+    printf("1. Nazwa\n");
+    printf("2. Gatunek\n");
+    printf("3. Poziom mocy\n");
+    printf("4. Poziom niebezpieczenstwa\n");
+    printf("5. Data karmienia\n");
+    printf("6. Status stworzenia\n");
+    int wybor = pobierz_liczbe("Wpisz numer opcji (1-6): ");
+    clear_buffer();
+    mistyczne_stworzenie* temp = *head;;
+    mistyczne_stworzenie* prev = NULL;
+    int znaleziono = 0;
+    while (temp != NULL) {
+        int do_usuniecia = 0;
+        switch (wybor) {
             case 1:
-                do {
-                    printf("Nowy gatunek: ");
-                    clear_buffer();
-                    fgets(tab[indeks].gatunek, MAX_ZN, stdin);
-                    tab[indeks].gatunek[strcspn(tab[indeks].gatunek, "\n")] = 0;
-                } while (!czy_tekst(tab[indeks].gatunek));
+                if (strcmp(temp->nazwa, nazwa) == 0) {
+                    do_usuniecia = 1;
+                }
                 break;
             case 2:
-                do {
-                    tab[indeks].poziom_mocy = pobierz_liczbe("Poziom mocy (1-999): ");
-                    if (tab[indeks].poziom_mocy >= 1 && tab[indeks].poziom_mocy <= 999)
-                        break;
-                    printf("Blad: Poziom mocy musi byc w zakresie 1–999!\n");
-                } while (1);
+                if (strcmp(temp->gatunek, nazwa) == 0) {
+                    do_usuniecia = 1;
+                }
                 break;
             case 3:
-                do {
-                    tab[indeks].poziom_niebezpieczenstwa = pobierz_liczbe("Poziom niebezpieczenstwa (1-10): ");
-                    if (tab[indeks].poziom_niebezpieczenstwa >= 1 && tab[indeks].poziom_niebezpieczenstwa <= 10)
-                        break;
-                    printf("Blad: Poziom niebezpieczenstwa musi byc w zakresie 1–10!\n");
-                } while (1);
+                if (temp->poziom_mocy == atoi(nazwa)) {
+                    do_usuniecia = 1;
+                }
                 break;
             case 4:
-                printf("Nowa data karmienia:\n");
-                tab[indeks].data_karmienia.dzien = pobierz_liczbe("Dzien: ");
-                tab[indeks].data_karmienia.miesiac = pobierz_liczbe("Miesiac: ");
-                tab[indeks].data_karmienia.rok = pobierz_liczbe("Rok: ");
+                if (temp->poziom_niebezpieczenstwa == atoi(nazwa)) {
+                    do_usuniecia = 1;
+                }
                 break;
-            case 5:             
-                do {
-                    status_val = pobierz_liczbe("Nowy status (0-4): ");
-                    if (status_val >= STABILNY && status_val <= W_KWARANTANNIE) {
-                        tab[indeks].status_stworzenia = (stan)status_val;
-                        break;
+            case 5:
+                {
+                    char data_str[11];
+                    snprintf(data_str, sizeof(data_str), "%02d-%02d-%04d", temp->data_karmienia.dzien, temp->data_karmienia.miesiac, temp->data_karmienia.rok);
+                    if (strcmp(data_str, nazwa) == 0) {
+                        do_usuniecia = 1;
                     }
-                    printf("Blad: Status musi byc w zakresie 0–4!\n");
-                } while (1);
+                }
                 break;
-            case 0:
-                printf("Zakonczono edycje.\n");
+            case 6:
+                if (temp->status_stworzenia == (stan)atoi(nazwa)) {
+                    do_usuniecia = 1;
+                }
                 break;
             default:
                 printf("Niepoprawna opcja.\n");
-        }
-    } while (opcja != 0);
-}
-
-void usun_pojedyncze(mistyczne_stworzenie *tab, int *n) {
-    char nazwa[MAX_ZN];
-    clear_buffer();
-
-    printf("Podaj nazwe stworzenia do usuniecia: ");
-    fgets(nazwa, MAX_ZN, stdin);
-    nazwa[strcspn(nazwa, "\n")] = 0;
-
-    for (int i = 0; i < *n; i++) {
-        if (strcmp(tab[i].nazwa, nazwa) == 0) {
-
-            if (tab[i].status_stworzenia == NIEBEZPIECZNY) {
-                printf("Nie mozna usunac NIEBEZPIECZNEGO stworzenia!\n");
                 return;
-            }
-
-            for (int j = i; j < *n - 1; j++)
-                tab[j] = tab[j + 1];
-
-            (*n)--;
-            printf("Usunieto stworzenie.\n");
-            return;
         }
+
+        if (temp->status_stworzenia == NIEBEZPIECZNY) {
+            printf("Nie mozna usunac niebezpiecznego stworzenia: %s\n", temp->nazwa);
+            do_usuniecia = 0;
+        }
+        if (do_usuniecia) {
+            znaleziono++;
+            if (prev == NULL) {
+                *head = temp->next;
+            } else {
+                prev->next = temp->next;
+            }
+            mistyczne_stworzenie* to_delete = temp;
+            temp = temp->next;
+            free(to_delete);
+        } else {
+            prev = temp;
+            temp = temp->next;
+        }
+        printf("Liczba usunietych stworzen: %d\n", znaleziono);
     }
-    printf("Nie znaleziono stworzenia.\n");
+    if (znaleziono == 0) {
+        printf("Nie znaleziono stworzenia o podanych kryteriach do usuniecia.\n");
+    }
 }
 
-void usun_masowe(mistyczne_stworzenie *tab, int *n) {
-    int opcja;
-    clear_buffer();
-
-    printf("Usuwanie masowe:\n");
-    printf("1. Po gatunku\n");
-    printf("2. Po poziomie niebezpieczenstwa\n");
-    scanf("%d", &opcja);
-
-    clear_buffer();
-
-    int i = 0;
-    if (opcja == 1) {
-        char gatunek[MAX_ZN];
-        printf("Podaj gatunek: ");
-        fgets(gatunek, MAX_ZN, stdin);
-        gatunek[strcspn(gatunek, "\n")] = 0;
-
-        while (i < *n) {
-            if (strcmp(tab[i].gatunek, gatunek) == 0 &&
-                tab[i].status_stworzenia != NIEBEZPIECZNY) {
-
-                for (int j = i; j < *n - 1; j++)
-                    tab[j] = tab[j + 1];
-                (*n)--;
-            } else {
-                i++;
-            }
-        }
+void zwolnij_pamiec(mistyczne_stworzenie** head) {
+    mistyczne_stworzenie* temp = *head;
+    while (temp != NULL) {
+        mistyczne_stworzenie* to_delete = temp;
+        temp = temp->next;
+        free(to_delete);
     }
-    else if (opcja == 2) {
-        int poziom;
-        printf("Podaj poziom niebezpieczenstwa: ");
-        scanf("%d", &poziom);
-
-        while (i < *n) {
-            if (tab[i].poziom_niebezpieczenstwa == poziom &&
-                tab[i].status_stworzenia != NIEBEZPIECZNY) {
-
-                for (int j = i; j < *n - 1; j++)
-                    tab[j] = tab[j + 1];
-                (*n)--;
-            } else {
-                i++;
-            }
-        }
-    }
-
-    printf("Usuwanie masowe zakonczone.\n");
+    *head = NULL;
 }
 
+void zapisz_do_pliku(const mistyczne_stworzenie* head, const char* nazwa_pliku) {
+    FILE* file = fopen(nazwa_pliku, "wb");
+    if (file == NULL) {
+        printf("Nie mozna otworzyc pliku do zapisu.\n");
+        return;
+    }
+    const mistyczne_stworzenie* temp = head;
+    while (temp != NULL) {
+        fwrite(temp, sizeof(mistyczne_stworzenie), 1, file);
+        temp = temp->next;
+    }
+    fclose(file);
+    printf("Dane zapisane do pliku: %s\n", nazwa_pliku);
+}
 
-void sortuj_tekst(mistyczne_stworzenie *tab, int n) {
-    printf("Po czym chcesz sortowanie alfabetyczne:\n");
+void wczytaj_z_pliku(mistyczne_stworzenie** head, const char* nazwa_pliku) {
+    FILE* file = fopen(nazwa_pliku, "rb");
+    if (file == NULL) {
+        printf("Nie mozna otworzyc pliku do odczytu.\n");
+        return;
+    }
+    zwolnij_pamiec(head);
+    mistyczne_stworzenie temp;
+    while (fread(&temp, sizeof(mistyczne_stworzenie), 1, file) == 1) {
+        dodaj_stworzenie(head, temp);
+    }
+    fclose(file);
+    printf("Dane wczytane z pliku: %s\n", nazwa_pliku);
+}
+
+void sortuj_tekstowo(mistyczne_stworzenie** head) {
+    if (*head == NULL || (*head)->next == NULL) {
+        return;
+    }
+    printf("Wybierz pole do sortowania tekstowego:\n");
     printf("1. Nazwa\n");
     printf("2. Gatunek\n");
-    int opcja;
-    scanf("%d", &opcja);
-    for (int i = 0; i < n - 1; i++)
-        for (int j = i + 1; j < n; j++)
-            if (opcja == 1 && strcmp(tab[i].nazwa, tab[j].nazwa) > 0) {
-                mistyczne_stworzenie tmp = tab[i];
-                tab[i] = tab[j];
-                tab[j] = tmp;
-            } else if (opcja == 2 && strcmp(tab[i].gatunek, tab[j].gatunek) > 0) {
-                mistyczne_stworzenie tmp = tab[i];
-                tab[i] = tab[j];
-                tab[j] = tmp;
+    int wybor;
+    do {
+        wybor = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+        if (wybor < 1 || wybor > 2) {
+            printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-2.\n");
+        }
+    } while (wybor < 1 || wybor > 2);
+    clear_buffer();
+    int swapped;
+    do {
+        swapped = 0;
+        mistyczne_stworzenie* ptr1 = *head;
+        mistyczne_stworzenie* lptr = NULL;
+
+        while (ptr1->next != lptr) {
+            int cmp = 0;
+            if (wybor == 1) {
+                cmp = strcmp(ptr1->nazwa, ptr1->next->nazwa);
+            } else if (wybor == 2) {
+                cmp = strcmp(ptr1->gatunek, ptr1->next->gatunek);
             }
-    wyswietl(tab, n);
+            if (cmp > 0) {
+                mistyczne_stworzenie temp = *ptr1;
+                *ptr1 = *(ptr1->next);
+                *(ptr1->next) = temp;
+
+                mistyczne_stworzenie* next_next = ptr1->next->next;
+                ptr1->next->next = ptr1;
+                ptr1->next = next_next;
+
+                swapped = 1;
+            }
+            ptr1 = ptr1->next;
+        }
+        lptr = ptr1;
+    } while (swapped);
+    printf("Stworzenia posortowane tekstowo.\n");
 }
 
-void sortuj_liczby(mistyczne_stworzenie *tab, int n) {
-    printf("Po czym chcesz sortowanie liczbowe:\n");
+void sortuj_licbowo(mistyczne_stworzenie** head) {
+    if (*head == NULL || (*head)->next == NULL) {
+        return;
+    }
+    printf("Wybierz pole do sortowania liczbowego:\n");
     printf("1. Poziom mocy\n");
     printf("2. Poziom niebezpieczenstwa\n");
-    int opcja;
-    scanf("%d", &opcja);
-    for (int i = 0; i < n - 1; i++)
-        for (int j = i + 1; j < n; j++)
-            if (opcja == 1 && tab[i].poziom_mocy < tab[j].poziom_mocy) {
-                mistyczne_stworzenie tmp = tab[i];
-                tab[i] = tab[j];
-                tab[j] = tmp;
+    int wybor;
+    do {
+        wybor = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+        if (wybor < 1 || wybor > 2) {
+            printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-2.\n");
+        }
+    } while (wybor < 1 || wybor > 2);
+    clear_buffer();
+    int swapped;
+    do {
+        swapped = 0;
+        mistyczne_stworzenie* ptr1 = *head;
+        mistyczne_stworzenie* lptr = NULL;
+
+        while (ptr1->next != lptr) {
+            int cmp = 0;
+            if (wybor == 1) {
+                cmp = ptr1->poziom_mocy - ptr1->next->poziom_mocy;
+            } else if (wybor == 2) {
+                cmp = ptr1->poziom_niebezpieczenstwa - ptr1->next->poziom_niebezpieczenstwa;
             }
-            else if (opcja == 2 && tab[i].poziom_niebezpieczenstwa < tab[j].poziom_niebezpieczenstwa) {
-                mistyczne_stworzenie tmp = tab[i];
-                tab[i] = tab[j];
-                tab[j] = tmp;
+            if (cmp > 0) {
+                mistyczne_stworzenie temp = *ptr1;
+                *ptr1 = *(ptr1->next);
+                *(ptr1->next) = temp;
+
+                mistyczne_stworzenie* next_next = ptr1->next->next;
+                ptr1->next->next = ptr1;
+                ptr1->next = next_next;
+
+                swapped = 1;
             }
-    wyswietl(tab, n);
-}
-
-void zapisz(const char *plik, mistyczne_stworzenie *tab, int n) {
-    FILE *f = fopen(plik, "wb");
-    if (f == NULL) {
-        printf("Blad: Nie mozna otworzyc pliku do zapisu!\n");
-        return;
-    }
-
-    if (fwrite(&n, sizeof(int), 1, f) != 1) {
-        printf("Blad podczas zapisu naglowka!\n");
-    } else {
-        fwrite(tab, sizeof(mistyczne_stworzenie), n, f);
-        printf("Dane zapisane pomyslnie w %s.\n", plik);
-    }
-    fclose(f);
-}
-
-void wczytaj(const char *plik, mistyczne_stworzenie **tab, int *n) {
-    FILE *f = fopen(plik, "rb");
-    if (f == NULL) {
-        printf("Blad: Plik %s nie istnieje!\n", plik);
-        return;
-    }
-
-    int nowa_liczba;
-    if (fread(&nowa_liczba, sizeof(int), 1, f) != 1) {
-        printf("Blad: Nieczytelny format pliku!\n");
-        fclose(f);
-        return;
-    }
-
-    mistyczne_stworzenie *temp = realloc(*tab, nowa_liczba * sizeof(mistyczne_stworzenie));
-    if (temp == NULL && nowa_liczba > 0) {
-        printf("Blad: Brak pamieci do wczytania danych!\n");
-        fclose(f);
-        return;
-    }
-
-    *tab = temp;
-    size_t przeczytano = fread(*tab, sizeof(mistyczne_stworzenie), nowa_liczba, f);
-    *n = (int)przeczytano;
-
-    if (przeczytano != (size_t)nowa_liczba) {
-        printf("Ostrzezenie: Plik moze byc przerwany. Wczytano tylko %d rekordow.\n", *n);
-    } else {
-        printf("Wczytano %d stworzen z pliku.\n", *n);
-    }
-
-    fclose(f);
-}
-
-void wyswietl(mistyczne_stworzenie *tab, int n) {
-    for (int i = 0; i < n; i++) {
-        printf("nazwa:%s | gatunek:%s | moc:%d | niebezpieczenstwo:%d | data_karmienia:%02d-%02d-%04d | status:%d-\n",
-               tab[i].nazwa,
-               tab[i].gatunek,
-               tab[i].poziom_mocy,
-               tab[i].poziom_niebezpieczenstwa,
-               tab[i].data_karmienia.dzien,
-               tab[i].data_karmienia.miesiac,
-               tab[i].data_karmienia.rok,
-               tab[i].status_stworzenia);
-               if(tab[i].status_stworzenia == STABILNY) {
-                   printf("STABILNY\n");
-               } else if(tab[i].status_stworzenia == NIESPOKOJNY) {
-                   printf("NIESPOKOJNY\n");
-               } else if(tab[i].status_stworzenia == AGRESYWNY) {
-                   printf("AGRESYWNY\n");
-               } else if(tab[i].status_stworzenia == NIEBEZPIECZNY) {
-                   printf("NIEBEZPIECZNY\n");
-               } else if(tab[i].status_stworzenia == W_KWARANTANNIE) {
-                   printf("W_KWARANTANNIE\n");
-               }
-    }
-    if (n == 0) {
-        printf("Brak mistycznych stworzen do wyswietlenia.\n");
-    }
+            ptr1 = ptr1->next;
+        }
+        lptr = ptr1;
+    } while (swapped);
+    printf("Stworzenia posortowane liczbowo.\n");
 }

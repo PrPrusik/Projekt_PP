@@ -3,15 +3,13 @@
 
 #define MAX_ZN 101
 
-typedef struct
-{
+typedef struct {
     int dzien;
     int miesiac;
     int rok;
 } data;
 
-typedef enum
-{
+typedef enum{
     STABILNY,
     NIESPOKOJNY,
     AGRESYWNY,
@@ -19,14 +17,15 @@ typedef enum
     W_KWARANTANNIE
 } stan;
 
-typedef struct
-{
+typedef struct mistyczne_stworzenie{
     char nazwa[MAX_ZN];
     char gatunek[MAX_ZN];
     int poziom_mocy;
     int poziom_niebezpieczenstwa;
     data data_karmienia;
     stan status_stworzenia;
+
+    struct mistyczne_stworzenie* next;
 } mistyczne_stworzenie;
 
-#endif
+#endif 
