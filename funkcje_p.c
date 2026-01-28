@@ -5,7 +5,7 @@
 
 #include "funkcje_p.h"
 
-static void clear_buffer() {
+void clear_buffer() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 }
@@ -91,11 +91,85 @@ void wczyt_date(data* data_karmienia) {
 void wczyt_status(stan* status_stworzenia) {
     int status;
     do {
-        printf("Podaj status stworzenia (0-Stabilny, 1-Niespokojny, 2-Agresywny, 3-Niebezpieczny, 4-W Kwarantannie): ");
+        printf("Podaj status stworzenia (0-Stabilny, 1-Niespokojny, 2-Agresywny, 3-Niebezpieczny, 4-W Kwarantannie): \n");
         status = pobierz_liczbe("Wpisz numer statusu (0-4): ");
         if (status < 0 || status > 4) {
             printf("Niepoprawny status. Prosze podac liczbe z zakresu 0-4.\n");
         }
     } while (status < 0 || status > 4);
     *status_stworzenia = (stan)status;
+}
+
+const char* stan_to_string(stan status) {
+    switch (status) {
+        case STABILNY:
+            return "Stabilny";
+        case NIESPOKOJNY:
+            return "Niespokojny";
+        case AGRESYWNY:
+            return "Agresywny";
+        case NIEBEZPIECZNY:
+            return "Niebezpieczny";
+        case W_KWARANTANNIE:
+            return "W Kwarantannie";
+        default:
+            return "Nieznany";
+    }
+}
+
+void podziel_liste(mistyczne_stworzenie* head, mistyczne_stworzenie** a, mistyczne_stworzenie** b){
+    mistyczne_stworzenie* slow = head;
+    mistyczne_stworzenie* fast = head->next;
+
+    while (fast != NULL) {
+        fast = fast->next;
+        if (fast != NULL) {
+            slow = slow->next;
+            fast = fast->next;
+        }
+    }
+    *a = head;
+    *b = slow->next;
+    slow->next = NULL;
+}
+
+mistyczne_stworzenie* scalaj_tekstowo(mistyczne_stworzenie* a, mistyczne_stworzenie* b, int pole){
+    if (a == NULL) return b;
+    if (b == NULL) return a;
+    int cmp;
+    if (pole == 1) {
+        cmp = strcmp(a->nazwa, b->nazwa);
+    } else {
+        cmp = strcmp(a->gatunek, b->gatunek);
+    }
+
+    mistyczne_stworzenie* wynik;
+    if (cmp <= 0) {
+        wynik = a;
+        wynik->next = scalaj_tekstowo(a->next, b, pole);
+    } else {
+        wynik = b;
+        wynik->next = scalaj_tekstowo(a, b->next, pole);
+    }
+    return wynik;
+}
+mistyczne_stworzenie* scalaj_liczbowo(mistyczne_stworzenie* a, mistyczne_stworzenie* b, int pole){
+    if (a == NULL) return b;
+    if (b == NULL) return a;
+    int cmp;
+    if (pole == 1) {
+        cmp = a->poziom_mocy - b->poziom_mocy;
+    } else {
+        cmp = a->poziom_niebezpieczenstwa - b->poziom_niebezpieczenstwa;
+    }
+
+    mistyczne_stworzenie* wynik;
+    if (cmp <= 0) {
+        wynik = a;
+        wynik->next = scalaj_liczbowo(a->next, b, pole);
+    } else {
+        wynik = b;
+        wynik->next = scalaj_liczbowo(a, b->next, pole);
+    }
+    return wynik;
 }

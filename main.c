@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "funkcje.h"
 #include "funkcje_p.h"
@@ -12,6 +13,7 @@ int main(int argc, char* argv[]){
     }
     const char* nazwa_pliku = argv[1];
     mistyczne_stworzenie* head = NULL;
+    wczytaj_z_pliku(&head, nazwa_pliku);
     int wybor;
     
     printf("\n--- EWIDENCJA MISTYCZNYCH STWORZEN ---\n");
@@ -28,62 +30,59 @@ int main(int argc, char* argv[]){
         printf("8. Wczytaj z pliku\n");
         printf("0. Wyjdz\n");
         wybor = pobierz_liczbe("Wpisz numer opcji: ");
-        clear_buffer();
         switch (wybor)
         {
         case 1:
-            dodaj_stworzenie(&head, (mistyczne_stworzenie){0});
+            dodaj_stworzenie(&head);
             break;
         case 2:
             wyswietl_stworzenia(head);
             break;
         case 3:
-            {
-                char nazwa[MAX_ZN];
-                printf("Podaj nazwe stworzenia do wyszukania: ");
-                fgets(nazwa, MAX_ZN, stdin);
-                nazwa[strcspn(nazwa, "\n")] = 0;
-                wyszukaj_stworzenie(head, nazwa);
-            }
+            wyszukaj_stworzenie(head);
             break;
         case 4:
-            {
-                char nazwa[MAX_ZN];
-                printf("Podaj nazwe stworzenia do modyfikacji: ");
-                fgets(nazwa, MAX_ZN, stdin);
-                nazwa[strcspn(nazwa, "\n")] = 0;
-                modyfikuj_stworzenie(head, nazwa);
-            }
+            modyfikuj_stworzenie(head);
             break;
         case 5:
-            {
-                char nazwa[MAX_ZN];
-                printf("Podaj nazwe stworzenia do usuniecia: ");
-                fgets(nazwa, MAX_ZN, stdin);
-                nazwa[strcspn(nazwa, "\n")] = 0;
-                usun_stworzenie(&head, nazwa);
+            usun_stworzenie(&head);
+            break;
+        case 6:{
+            int typ;
+            int pole;
+            printf("Wybierz typ sortowania:\n1. Tekstowo\n2. Liczbowo\n");
+            typ = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+            do {
+                if (typ < 1 || typ > 2) {
+                    printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-2.\n");
+                    typ = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+                }
+            } while (typ < 1 || typ > 2);
+            if (typ == 1) {
+                printf("Wybierz pole do sortowania tekstowo:\n1. Nazwa\n2. Gatunek\n");
+                pole = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+                do {
+                    if (pole < 1 || pole > 2) {
+                        printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-2.\n");
+                        pole = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+                    }
+                } while (pole < 1 || pole > 2);
+                sortuj_tekstowo(&head, pole);
+                wyswietl_stworzenia(head);
+            } else if (typ == 2) {
+                printf("Wybierz pole do sortowania liczbowo:\n1. Poziom mocy\n2. Poziom niebezpieczenstwa\n");
+                pole = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+                do {
+                    if (pole < 1 || pole > 2) {
+                        printf("Niepoprawna opcja. Prosze podac liczbe z zakresu 1-2.\n");
+                        pole = pobierz_liczbe("Wpisz numer opcji (1-2): ");
+                    }
+                } while (pole < 1 || pole > 2);
+                sortuj_liczbowo(&head, pole);
+                wyswietl_stworzenia(head);
             }
             break;
-        case 6:
-            {
-                int wybor_sortowania;
-                printf("Wybierz typ sortowania:\n");
-                printf("1. Tekstowy\n");
-                printf("2. Liczbowy\n");
-                wybor_sortowania = pobierz_liczbe("Wpisz numer opcji (1-2): ");
-                clear_buffer();
-                
-                if (wybor_sortowania == 1) {
-                    sortuj_tekstowo(&head);
-                    break;
-                } else if (wybor_sortowania == 2) {
-                    sortuj_licbowo(&head);
-                    break;
-                } else {
-                    printf("Niepoprawna opcja.\n");
-                    break;
-                }
-            }
+        }
         case 7:
             zapisz_do_pliku(head, nazwa_pliku);
             break;
