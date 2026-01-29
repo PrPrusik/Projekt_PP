@@ -39,30 +39,57 @@ int pobierz_liczbe(const char* str) {
 
 void wczyt_nazwe(char* nazwa, const char* prompt) {
     char buffer[MAX_ZN];
+    int poprawna = 0;
+
     do {
         printf("%s", prompt);
-        fgets(buffer, MAX_ZN, stdin);
-        buffer[strcspn(buffer, "\n")] = 0;
-        if (!czy_tekst(buffer)) {
-            printf("Niepoprawna nazwa. Prosze uzyc tylko liter i spacji.\n");
-        } 
-    } while (!czy_tekst(buffer));
-    strncpy(nazwa, buffer, MAX_ZN);
+        if (fgets(buffer, MAX_ZN, stdin)) {
+            buffer[strcspn(buffer, "\n")] = 0;
+            
+            size_t dlugosc = strlen(buffer);
+
+            if (!czy_tekst(buffer)) {
+                printf("Niepoprawna nazwa. Prosze uzyc tylko liter i spacji.\n");
+            } 
+            else if (dlugosc == 0 || dlugosc >= MAX_ZN - 1) {
+                printf("Nazwa ma nieodpowiednia dlugosc (1-%d znakow). Prosze sprobowac ponownie.\n", MAX_ZN - 2);
+            }
+            else {
+                poprawna = 1;
+            }
+        }
+    } while (!poprawna);
+
+    strncpy(nazwa, buffer, MAX_ZN - 1);
+    nazwa[MAX_ZN - 1] = '\0';
 }
 
 void wczyt_gatunek(char* gatunek, const char* prompt) {
     char buffer[MAX_ZN];
+    int poprawna = 0;
+
     do {
         printf("%s", prompt);
-        fgets(buffer, MAX_ZN, stdin);
-        buffer[strcspn(buffer, "\n")] = 0;
-        if (!czy_tekst(buffer)) {
-            printf("Niepoprawny gatunek. Prosze uzyc tylko liter i spacji.\n");
-        } 
-    } while (!czy_tekst(buffer));
-    strncpy(gatunek, buffer, MAX_ZN);
-}
+        if (fgets(buffer, MAX_ZN, stdin)) {
+            buffer[strcspn(buffer, "\n")] = 0;
+            
+            size_t dlugosc = strlen(buffer);
 
+            if (!czy_tekst(buffer)) {
+                printf("Niepoprawny gatunek. Prosze uzyc tylko liter i spacji.\n");
+            } 
+            else if (dlugosc == 0 || dlugosc >= MAX_ZN - 1) {
+                printf("Gatunek ma nieodpowiednia dlugosc. Prosze sprobowac ponownie.\n");
+            }
+            else {
+                poprawna = 1;
+            }
+        }
+    } while (!poprawna);
+
+    strncpy(gatunek, buffer, MAX_ZN - 1);
+    gatunek[MAX_ZN - 1] = '\0';
+}
 void wczyt_poziom_m(int* poziom, const char* prompt) {
     do {
         *poziom = pobierz_liczbe(prompt);
@@ -118,6 +145,12 @@ const char* stan_to_string(stan status) {
 }
 
 void podziel_liste(mistyczne_stworzenie* head, mistyczne_stworzenie** a, mistyczne_stworzenie** b){
+    if (head == NULL || head->next == NULL) {
+        *a = head;
+        *b = NULL;
+        return;
+    }
+
     mistyczne_stworzenie* slow = head;
     mistyczne_stworzenie* fast = head->next;
 

@@ -286,15 +286,15 @@ void usun_stworzenie(mistyczne_stworzenie** head) {
         }
         if (do_usuniecia) {
             mistyczne_stworzenie* temp = current;
-            current = current->next;
-            free(temp);
-            if (previous == NULL) {
-                *head = current;
-            } else {
-                previous->next = current;
-            }
             printf("Usunieto stworzenie: %s\n", current->nazwa);
-            free(current);
+            if (previous == NULL) {
+                *head = current->next;
+                current = *head;
+            } else {
+                previous->next = current->next;
+                current = previous->next;
+            }
+            free(temp);
             znaleziono++;
         }
         previous = current;
@@ -354,23 +354,17 @@ void wczytaj_z_pliku(mistyczne_stworzenie** head, const char* nazwa_pliku) {
     int wczytano = 0;
 
     while (1) {
-        char temp_nazwa[MAX_ZN];
-        size_t bytes_read = fread(temp_nazwa, sizeof(char), MAX_ZN, file);
-        if (bytes_read < MAX_ZN) {
-            break;
-        }
-        
         mistyczne_stworzenie* nowe_stworzenie = (mistyczne_stworzenie*)malloc(sizeof(mistyczne_stworzenie));
         if (nowe_stworzenie == NULL) {
-            printf("Blad alokacji pamieci!\n");
+            printf("Blad alokacji pamieci podczas wczytywania z pliku.\n");
             break;
         }
-        size_t read_bytes = fread(&nowe_stworzenie->nazwa, sizeof(char), MAX_ZN, file);
-        if (read_bytes < MAX_ZN) {
+        if (fread(nowe_stworzenie->nazwa, sizeof(char), MAX_ZN, file) != MAX_ZN) {
             free(nowe_stworzenie);
             break;
         }
-        fread(&nowe_stworzenie->gatunek, sizeof(char), MAX_ZN, file);
+
+        fread(nowe_stworzenie->gatunek, sizeof(char), MAX_ZN, file);
         fread(&nowe_stworzenie->poziom_mocy, sizeof(int), 1, file);
         fread(&nowe_stworzenie->poziom_niebezpieczenstwa, sizeof(int), 1, file);
         fread(&nowe_stworzenie->data_karmienia, sizeof(data), 1, file);
